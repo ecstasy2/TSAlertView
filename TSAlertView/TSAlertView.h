@@ -6,6 +6,7 @@
 
 
 #import <UIKit/UIKit.h>
+#import "TUNinePatch.h"
 
 typedef enum 
 {
@@ -44,13 +45,17 @@ typedef enum
 
 @interface TSAlertView : UIView
 {
-	UIImage*				_backgroundImage;
+	TUNinePatch*			_backgroundImage;
 	UILabel*				_titleLabel;
 	UILabel*				_messageLabel;
 	UITextView*				_messageTextView;
 	UIImageView*			_messageTextViewMaskImageView;
 	UITextField*			_inputTextField;
 	NSMutableArray*			_buttons;
+    BOOL                    hasInputFields;
+    
+    void (^willDisplayDialog)(TSAlertView *);
+    void (^didDismissWithButtonIndexBlock)(TSAlertView *, NSInteger);
 }
 @property(nonatomic, copy) NSString *title;
 @property(nonatomic, copy) NSString *message;
@@ -58,13 +63,20 @@ typedef enum
 @property(nonatomic) NSInteger cancelButtonIndex;
 @property(nonatomic, readonly) NSInteger firstOtherButtonIndex;
 @property(nonatomic, readonly) NSInteger numberOfButtons;
+@property(nonatomic, readonly) NSArray *buttons;
 @property(nonatomic, readonly, getter=isVisible) BOOL visible;
+@property(nonatomic, readonly) UILabel *messageLabel;
+@property(nonatomic, readonly) UILabel *titleLabel;
+
+@property(nonatomic, copy) void (^willDisplayDialog)(TSAlertView *);
+@property(nonatomic, copy) void (^didDismissWithButtonIndexBlock)(TSAlertView *, NSInteger);
 
 @property(nonatomic, assign) TSAlertViewButtonLayout buttonLayout;
 @property(nonatomic, assign) CGFloat width;
 @property(nonatomic, assign) CGFloat maxHeight;
 @property(nonatomic, assign) BOOL usesMessageTextView;
-@property(nonatomic, retain) UIImage* backgroundImage;
+@property(nonatomic, assign) BOOL hasInputFields;
+@property(nonatomic, retain) TUNinePatch* backgroundImage;
 @property(nonatomic, assign) TSAlertViewStyle style;
 @property(nonatomic, readonly) UITextField* inputTextField;
 

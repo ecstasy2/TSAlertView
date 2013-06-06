@@ -124,11 +124,14 @@
 @synthesize usesMessageTextView;
 @synthesize backgroundImage = _backgroundImage;
 @synthesize style;
+@synthesize hasInputFields;
+@synthesize willDisplayDialog;
+@synthesize didDismissWithButtonIndexBlock;
 
 const CGFloat kTSAlertView_LeftMargin	= 10.0;
 const CGFloat kTSAlertView_TopMargin	= 16.0;
 const CGFloat kTSAlertView_BottomMargin = 15.0;
-const CGFloat kTSAlertView_RowMargin	= 5.0;
+const CGFloat kTSAlertView_RowMargin	= 10.0;
 const CGFloat kTSAlertView_ColumnMargin = 10.0;
 
 - (id) init 
@@ -204,7 +207,9 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 
 - (void) drawRect:(CGRect)rect
 {
-	[self.backgroundImage drawInRect: rect];
+    // we ignore the rect and redraw the entire view
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    [self.backgroundImage inContext:context drawInRect:[self bounds]];
 }
 
 - (void)dealloc 
@@ -243,7 +248,7 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	if ( w <= 0 )
 		w = 284;
 	
-	width = MAX( w, self.backgroundImage.size.width );
+	width = w;
 }
 
 - (CGFloat) width
@@ -261,7 +266,7 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	if ( h <= 0 )
 		h = 358;
 	
-	maxHeight = MAX( h, self.backgroundImage.size.height );
+	maxHeight = h;
 }
 
 - (CGFloat) maxHeight
@@ -278,7 +283,7 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	{
 		style = newStyle;
 		
-		if ( style == TSAlertViewStyleInput )
+		if ( style == TSAlertViewStyleInput || hasInputFields)
 		{
 			// need to watch for keyboard
 			[[NSNotificationCenter defaultCenter] addObserver: self selector: @selector( onKeyboardWillShow:) name: UIKeyboardWillShowNotification object: nil];
@@ -338,12 +343,14 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	if ( _titleLabel == nil )
 	{
 		_titleLabel = [[UILabel alloc] init];
-		_titleLabel.font = [UIFont boldSystemFontOfSize: 18];
+		_titleLabel.font = [UIFont boldSystemFontOfSize: 22];
 		_titleLabel.backgroundColor = [UIColor clearColor];
 		_titleLabel.textColor = [UIColor whiteColor];
 		_titleLabel.textAlignment = UITextAlignmentCenter;
 		_titleLabel.lineBreakMode = UILineBreakModeWordWrap;
 		_titleLabel.numberOfLines = 0;
+        _titleLabel.shadowColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0.3f];
+        _titleLabel.shadowOffset = CGSizeMake(-1, 1);
 	}
 	
 	return _titleLabel;
@@ -408,11 +415,11 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	return _inputTextField;
 }
 
-- (UIImage*) backgroundImage
+- (TUNinePatch*) backgroundImage
 {
 	if ( _backgroundImage == nil )
 	{
-		self.backgroundImage = [[UIImage imageNamed: @"TSAlertViewBackground.png"] stretchableImageWithLeftCapWidth: 15 topCapHeight: 30];
+		self.backgroundImage = [TUNinePatch ninePatchNamed: @"TSAlertViewBackground2"];
 	}
 	
 	return _backgroundImage;
@@ -507,6 +514,9 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	{
 		[self.inputTextField resignFirstResponder];
 	}
+    if (hasInputFields) {
+        // Find a way to notify the caller of the dismissal of the alert
+    }
 	
 	if ( [self.delegate respondsToSelector: @selector(alertView:willDismissWithButtonIndex:)] )
 	{
@@ -543,6 +553,10 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 	{
 		[self.delegate alertView: self didDismissWithButtonIndex: buttonIndex ];
 	}
+    
+    if (self.didDismissWithButtonIndexBlock) {
+        self.didDismissWithButtonIndexBlock(self,buttonIndex);
+    }
 	
 	// the one place we release the window we allocated in "show"
 	// this will propogate releases to us (TSAlertView), and our TSAlertViewController
@@ -582,6 +596,10 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 		[self layoutSubviews];
 		[self.inputTextField becomeFirstResponder];
 	}
+    
+    if (self.willDisplayDialog) {
+        self.willDisplayDialog(self);
+    }
 }
 
 - (void) pulse
@@ -663,7 +681,7 @@ const CGFloat kTSAlertView_ColumnMargin = 10.0;
 		{
 			self.titleLabel.frame = CGRectMake( kTSAlertView_LeftMargin, y, titleLabelSize.width, titleLabelSize.height );
 			[self addSubview: self.titleLabel];
-			y += titleLabelSize.height + kTSAlertView_RowMargin;
+			y += titleLabelSize.height + kTSAlertView_RowMargin + 5;
 		}
 		
 		// message
